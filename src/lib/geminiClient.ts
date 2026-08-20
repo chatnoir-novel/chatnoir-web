@@ -107,6 +107,7 @@ export interface ApiLikeResponse<T> {
 
 const FALLBACK_CHAIN = [
   'gemma-4-31b-it',
+  'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
 ];
 const DEFAULT_MODEL = FALLBACK_CHAIN[0];
@@ -290,7 +291,10 @@ const normalizeModelName = (model: string | null | undefined): string => {
   if (model === 'gemini-3.1-flash-lite-preview') {
     return 'gemini-3.1-flash-lite';
   }
-  return model || 'gemini-3.1-flash-lite';
+  if (model === 'gemini-3.5-flash-lite') {
+    return 'gemini-3.5-flash-lite';
+  }
+  return model || 'gemini-3.5-flash-lite';
 };
 
 const isRetriableError = (error: unknown) => {

@@ -87,6 +87,7 @@ const GOOGLE_AI_STUDIO_API_KEYS_URL = 'https://aistudio.google.com/app/api-keys'
 const GOOGLE_AI_STUDIO_RATE_LIMITS_URL = 'https://aistudio.google.com/u/8/rate-limit?timeRange=last-1-day';
 const RUNTIME_MODEL_OPTIONS = [
   { value: 'gemma-4-31b-it', label: 'Gemma 4 31B（推奨）', compactLabel: 'Gemma 4 31B' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite（軽量）', compactLabel: 'Gemini 3.5 Flash-Lite' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite（軽量）', compactLabel: 'Gemini 3.1 Flash-Lite' },
 ] as const;
 const DEFAULT_RUNTIME_MODEL: string = RUNTIME_MODEL_OPTIONS[0].value;
@@ -173,6 +174,7 @@ const persistPinnedSaveKeys = (titles: string[]) => {
 };
 
 const buildDuplicateSessionRunId = (): string => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+const SAMPLE_SCENARIO_TITLE = '【サンプルシナリオ】歯車仕掛けの手紙';
 
 // --- Chat Input Component ---
 interface ChatInputHandle {
@@ -191,7 +193,8 @@ const ChatInput = React.forwardRef<ChatInputHandle, {
   placeholder?: string;
   name?: string;
   sendTrigger?: 'enter' | 'ctrl-enter';
-}>(({ onSend, disabled, className, style, placeholder, name, sendTrigger = 'enter' }, ref) => {
+  automationId?: string;
+}>(({ onSend, disabled, className, style, placeholder, name, sendTrigger = 'enter', automationId }, ref) => {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -252,6 +255,7 @@ const ChatInput = React.forwardRef<ChatInputHandle, {
     <textarea
       ref={textareaRef}
       name={name}
+      data-automation-id={automationId}
       className={className}
       style={style}
       placeholder={placeholder}
@@ -448,6 +452,64 @@ interface StoredMapSnapshot {
   mapLayers?: Record<string, GraphMapLayer>;
   currentPos?: MapCurrentPos;
   lastPlay?: string;
+}
+
+interface AutomationActionDescriptor {
+  id: string;
+  label: string;
+  requiresText?: boolean;
+}
+
+interface AutomationScenarioDescriptor {
+  title: string;
+  isSample?: boolean;
+}
+
+interface AutomationSaveDescriptor {
+  key: string;
+  saveName: string;
+  scenarioTitle: string;
+  statusLabel?: string;
+}
+
+interface ChatNoirAutomationState {
+  version: number;
+  gameState: GameState;
+  openingFlowStage: OpeningFlowStage;
+  endingPhase: EndingPhase;
+  isLoading: boolean;
+  scenarioTitle: string;
+  sessionRunId: string;
+  currentInput: string;
+  currentLocation: {
+    layer: string;
+    nodeId?: string;
+    nodeLabel?: string;
+  } | null;
+  recentMessages: Array<{
+    role: 'user' | 'model';
+    text: string;
+  }>;
+  latestModelMessage: string;
+  availableActions: AutomationActionDescriptor[];
+  availableScenarios: AutomationScenarioDescriptor[];
+  availableSaves: AutomationSaveDescriptor[];
+  updatedAt: string;
+}
+
+interface ChatNoirAutomationApi {
+  getState: () => ChatNoirAutomationState;
+  setInput: (text: string) => boolean;
+  send: (overrideText?: string) => Promise<boolean>;
+  performAction: (actionId: string, payload?: string) => Promise<boolean>;
+  selectScenario: (title: string) => Promise<boolean>;
+  selectSave: (saveKeyOrName: string) => Promise<boolean>;
+}
+
+declare global {
+  interface Window {
+    __CHATNOIR_AUTOMATION__?: ChatNoirAutomationApi;
+  }
 }
 
 type ApiKeyStorageMode = 'session' | 'local';
@@ -2126,6 +2188,10 @@ export default function ChatNoir() {
     scrollToBottom();
   });
 
+  const scrollToTopEffect = useEffectEvent(() => {
+    scrollToTop();
+  });
+
   const scrollSupportToAnchorEffect = useEffectEvent((anchorId: string) => {
     scrollSupportToAnchor(anchorId);
   });
@@ -2435,6 +2501,42 @@ export default function ChatNoir() {
 
   const openWaitingRoomCoverPicker = () => {
     waitingRoomCoverInputRef.current?.click();
+  };
+
+  const selectScenarioForAutomation = async (title: string) => {
+    const normalizedTitle = title.trim();
+    if (!normalizedTitle) return false;
+
+    if (normalizedTitle === SAMPLE_SCENARIO_TITLE) {
+      await loadDefaultScenario();
+      setScenarioTitle(SAMPLE_SCENARIO_TITLE);
+      showToast('サンプルシナリオを読み込みました');
+      return true;
+    }
+
+    const scenario = masterScenarios.find((item) => item.title === normalizedTitle);
+    if (!scenario) return false;
+
+    setGmRuleText(scenario.gmRuleText || '');
+    setScenarioText(scenario.scenarioText || '');
+    setBriefingText(scenario.briefingText || '');
+    setPrologueText(scenario.prologueText || '');
+    setMapFileText(scenario.mapFileText || '');
+    const storedMapState = normalizeStoredMapState(scenario);
+    setMapLayers(storedMapState.layers);
+    setCurrentPos(storedMapState.currentPos || cloneDefaultCurrentPos());
+    setActiveLayer(storedMapState.currentPos?.layer || Object.keys(storedMapState.layers)[0] || DEFAULT_MAP_LAYER_NAME);
+    setCoverImage(scenario.coverImage || '');
+    setScenarioTitle(scenario.title || '');
+    setScenarioMeta(scenario.scenarioMeta || {});
+    showToast(`${scenario.title} を読み込みました`);
+    return true;
+  };
+
+  const startNewGameFromWaitingRoom = () => {
+    resetAllState();
+    setShowLibrarySettings(false);
+    setGameState('LOGIN');
   };
 
   // 新規ゲーム開始時にプロローグだけ表示する
@@ -3886,12 +3988,192 @@ ${currentMapJson}
     );
   };
 
+  const sendAutomationMessageEffect = useEffectEvent(async (overrideText?: string) => {
+    const textToSend = overrideText !== undefined ? overrideText : (chatInputRef.current?.getCurrentText() ?? '');
+    if (!textToSend.trim() || isLoading) return false;
+    await sendMessage(overrideText);
+    return true;
+  });
+
+  const performAutomationActionEffect = useEffectEvent(async (actionId: string) => {
+    if (actionId === 'enter_saves') {
+      setGameState('SAVES');
+      return true;
+    }
+    if (actionId === 'start_new_game') {
+      startNewGameFromWaitingRoom();
+      return true;
+    }
+    if (actionId === 'start_login') {
+      handleStartLogin();
+      return true;
+    }
+    if (actionId === 'open_introduction') {
+      openIntroduction();
+      return true;
+    }
+    if (actionId === 'close_introduction') {
+      closeIntroduction();
+      return true;
+    }
+    if (actionId === 'start_story') {
+      await startPhase2();
+      return true;
+    }
+    if (actionId === 'send_message') {
+      return sendAutomationMessageEffect();
+    }
+    if (actionId === 'scroll_to_bottom') {
+      scrollToBottomEffect();
+      return true;
+    }
+    if (actionId === 'scroll_to_top') {
+      scrollToTopEffect();
+      return true;
+    }
+    if (actionId === 'close_curtain') {
+      await forceCloseCurtain();
+      return true;
+    }
+    return false;
+  });
+
+  const selectScenarioForAutomationEffect = useEffectEvent(async (title: string) => selectScenarioForAutomation(title));
+
+  const selectSaveForAutomationEffect = useEffectEvent(async (saveKeyOrName: string) => {
+    const normalized = saveKeyOrName.trim();
+    if (!normalized) return false;
+    const matched = visibleAutoSaves.find((meta) => meta.key === normalized || meta.saveName === normalized || meta.scenarioTitle === normalized);
+    if (!matched) return false;
+    await handleAutoSaveLoad(matched.key);
+    return true;
+  });
+
+  useEffect(() => {
+    const currentInput = chatInputRef.current?.getCurrentText() ?? '';
+    const locationLayer = currentPos?.layer || '';
+    const locationNodeId = currentPos?.nodeId || '';
+    const locationNodeLabel = currentPos
+      ? getMapNodeLabel(mapLayers, currentPos)
+      : '';
+    const recentMessages = messages
+      .filter((message) => !message.isGm && !message.isHidden)
+      .slice(-8)
+      .map((message) => ({
+        role: message.role,
+        text: message.parts.map((part) => part.text).join('\n').trim(),
+      }))
+      .filter((message) => message.text);
+    const latestModelMessage = [...recentMessages].reverse().find((message) => message.role === 'model')?.text || '';
+    const availableActions: AutomationActionDescriptor[] = [];
+
+    if (gameState === 'WELCOME') {
+      availableActions.push({ id: 'enter_saves', label: '物語で遊ぶ' });
+    }
+    if (gameState === 'SAVES') {
+      availableActions.push({ id: 'start_new_game', label: '新しく遊ぶ' });
+    }
+    if (gameState === 'LOGIN' && apiKey.trim() && scenarioText.trim() && prologueText.trim() && briefingText.trim()) {
+      availableActions.push({ id: 'start_login', label: 'プロローグへ' });
+    }
+    if (gameState === 'PLAYING' && openingFlowStage === 'PROLOGUE' && messages.length <= 2 && !isLoading) {
+      availableActions.push({ id: 'open_introduction', label: 'イントロダクションを開く' });
+    }
+    if (gameState === 'PLAYING' && openingFlowStage === 'INTRODUCTION') {
+      availableActions.push({ id: 'close_introduction', label: 'イントロダクションを閉じる' });
+      if (!isLoading) {
+        availableActions.push({ id: 'start_story', label: '物語に入る' });
+      }
+    }
+    if (gameState === 'PLAYING' && openingFlowStage === 'MAIN') {
+      availableActions.push({ id: 'scroll_to_bottom', label: '本文末尾へ移動' });
+      availableActions.push({ id: 'scroll_to_top', label: '本文先頭へ移動' });
+      if (!isLoading) {
+        availableActions.push({ id: 'send_message', label: '入力を送信', requiresText: true });
+      }
+    }
+    if (gameState === 'PLAYING' && endingPhase === 'READY_TO_END') {
+      availableActions.push({ id: 'close_curtain', label: '幕を閉じる' });
+    }
+
+    const state: ChatNoirAutomationState = {
+      version: 1,
+      gameState,
+      openingFlowStage,
+      endingPhase,
+      isLoading,
+      scenarioTitle,
+      sessionRunId,
+      currentInput,
+      currentLocation: locationLayer
+        ? {
+            layer: locationLayer,
+            nodeId: locationNodeId || undefined,
+            nodeLabel: locationNodeLabel || undefined,
+          }
+        : null,
+      recentMessages,
+      latestModelMessage,
+      availableActions,
+      availableScenarios: [
+        { title: SAMPLE_SCENARIO_TITLE, isSample: true },
+        ...masterScenarios.map((scenario) => ({ title: scenario.title }))
+      ],
+      availableSaves: visibleAutoSaves.slice(0, 20).map((meta) => ({
+        key: meta.key,
+        saveName: meta.saveName || meta.key,
+        scenarioTitle: meta.scenarioTitle?.trim() || '名称未設定',
+        statusLabel: meta.statusLabel,
+      })),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const api: ChatNoirAutomationApi = {
+      getState: () => state,
+      setInput: (text: string) => {
+        if (!chatInputRef.current) return false;
+        chatInputRef.current.setValue(text);
+        chatInputRef.current.focus();
+        return true;
+      },
+      send: async (overrideText?: string) => sendAutomationMessageEffect(overrideText),
+      performAction: async (actionId: string) => performAutomationActionEffect(actionId),
+      selectScenario: async (title: string) => selectScenarioForAutomationEffect(title),
+      selectSave: async (saveKeyOrName: string) => selectSaveForAutomationEffect(saveKeyOrName),
+    };
+
+    window.__CHATNOIR_AUTOMATION__ = api;
+    window.dispatchEvent(new CustomEvent('chatnoir:automation-state', { detail: state }));
+
+    return () => {
+      if (window.__CHATNOIR_AUTOMATION__ === api) {
+        delete window.__CHATNOIR_AUTOMATION__;
+      }
+    };
+  }, [
+    apiKey,
+    briefingText,
+    currentPos,
+    endingPhase,
+    gameState,
+    isLoading,
+    mapLayers,
+    masterScenarios,
+    messages,
+    openingFlowStage,
+    prologueText,
+    scenarioText,
+    scenarioTitle,
+    sessionRunId,
+    visibleAutoSaves,
+  ]);
+
   if (gameState === 'WELCOME') {
     return (
       <div className={`${styles.welcomeContainer} fade-in`}>
         {isLoaded ? <img src={resolvePublicAssetPath(APP_LOGO_WIDE_PATH)} alt="ChatNoir" className={styles.welcomeLogo} /> : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <button className={styles.welcomeBtn} onClick={() => setGameState('SAVES')}>
+          <button className={styles.welcomeBtn} data-automation-id="enter-saves" onClick={() => setGameState('SAVES')}>
             物語で遊ぶ
           </button>
 
@@ -3916,7 +4198,7 @@ ${currentMapJson}
               </h2>
             </div>
             <div style={{ display: isMobileLayout ? 'grid' : 'flex', gridTemplateColumns: isMobileLayout ? 'repeat(2, minmax(0, 1fr))' : undefined, width: isMobileLayout ? '100%' : undefined, gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <button onClick={() => { resetAllState(); setShowLibrarySettings(false); setGameState('LOGIN'); }} style={{ background: '#e0e0e0', color: '#000', border: 'none', padding: '0.7rem 1.4rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '1px', width: isMobileLayout ? '100%' : undefined }}>
+              <button data-automation-id="start-new-game" onClick={startNewGameFromWaitingRoom} style={{ background: '#e0e0e0', color: '#000', border: 'none', padding: '0.7rem 1.4rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '1px', width: isMobileLayout ? '100%' : undefined }}>
                 新しく遊ぶ
               </button>
               <button onClick={handleLoadData} style={{ background: 'transparent', color: '#ccc', border: '1px solid #333', padding: '0.7rem 1.4rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', letterSpacing: '1px', width: isMobileLayout ? '100%' : undefined }}>
@@ -4227,7 +4509,7 @@ ${currentMapJson}
               {/* サンプルシナリオを先頭に追加 */}
               {[
                 {
-                  title: '【サンプルシナリオ】歯車仕掛けの手紙',
+                  title: SAMPLE_SCENARIO_TITLE,
                   isSample: true,
                   coverImage: DEFAULT_SAMPLE_COVER_PATH,
                   lastUpdated: new Date(0).toISOString() // 常に一番後ろにならないよう適宜調整
@@ -4472,6 +4754,7 @@ ${currentMapJson}
 
             <button
               className={styles.btn}
+              data-automation-id="start-login"
               onClick={handleStartLogin}
               style={{ opacity: (!apiKey || !scenarioText || !prologueText || !briefingText) ? 0.5 : 1 }}
             >
@@ -4726,6 +5009,7 @@ ${currentMapJson}
               </p>
               <button
                 className={styles.btn}
+                data-automation-id="prologue-open-introduction"
                 onClick={openIntroduction}
                 style={{
                   padding: isVertical ? '1.2rem 0.9rem' : '1rem 4rem',
@@ -4875,6 +5159,7 @@ ${currentMapJson}
             <ChatInput
               ref={chatInputRef}
               name="mainMessage"
+              automationId="main-message-input"
               className={styles.chatInput}
               sendTrigger="ctrl-enter"
               style={{ minHeight: '80px', maxHeight: isMobileLayout ? '112px' : '300px', flex: 1, resize: 'none', padding: isMobileLayout ? '10px 12px' : '12px', width: '100%' }}
@@ -4964,6 +5249,7 @@ ${currentMapJson}
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <button
                       className={styles.btn}
+                      data-automation-id="introduction-start-story"
                       onClick={startPhase2}
                       style={{ background: 'var(--text-main)', color: 'var(--bg-color)', border: 'none', padding: isMobileLayout ? '0.85rem 1.25rem' : '0.6rem 1.5rem', borderRadius: '4px', cursor: 'pointer', width: isMobileLayout ? '100%' : undefined, maxWidth: isMobileLayout ? '420px' : undefined }}
                     >
@@ -5019,6 +5305,7 @@ ${currentMapJson}
               <div style={{ display: 'flex', gap: isMobileLayout ? '6px' : '8px', width: '100%', alignItems: 'stretch', flexDirection: isMobileLayout ? 'column' : 'row' }}>
                 <button
                   className={styles.sendBtn}
+                  data-automation-id="main-message-send"
                   onClick={() => {
                     if (recoverableSend && !recoverableSend.isGm && isLoading) {
                       restoreLastSentMessage();

@@ -107,10 +107,12 @@ const PHASE_ORDER: GenerationPhaseId[] = ['phase1', 'phase2', 'phase3a', 'phase3
 const MODEL_OPTIONS = [
   { value: 'gemma-4-31b-it', label: 'Gemma 4 31B' },
   { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite' },
 ] as const;
 const PLAY_MODEL_OPTIONS = [
   { value: 'gemma-4-31b-it', label: 'Gemma 4 31B' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite' },
 ] as const;
 const DEFAULT_MODEL: string = MODEL_OPTIONS[0].value;
