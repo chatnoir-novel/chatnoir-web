@@ -431,6 +431,14 @@ const normalizeGmSceneBlock = (rawBlock: unknown): GmSceneBlock | null => {
   };
 };
 
+const getDialogueSpeaker = (block: GmSceneBlock): string => {
+  const explicitSpeaker = block.speaker_true_name || block.speaker_display_name || '';
+  if (explicitSpeaker) return explicitSpeaker;
+
+  const nameMatch = (block.text || '').match(/^([^「」]{1,40}?)\s*「/);
+  return nameMatch?.[1]?.trim() || '';
+};
+
 const normalizeGmPayload = (rawPayload: unknown): GmPayload => {
   if (!isRecord(rawPayload)) {
     return { scene_blocks: [] };
@@ -726,7 +734,7 @@ const generateChatResponse = async (request: GeminiChatRequest): Promise<GeminiC
             break;
           }
         } else if (block.type === 'dialogue') {
-          const speaker = (block.speaker_true_name || block.speaker_display_name || '').replace(/\s+/g, '');
+          const speaker = getDialogueSpeaker(block).replace(/\s+/g, '');
           const protagonistName = (scenarioMeta.protagonistName || '').replace(/\s+/g, '');
           const isSuspiciousDialogue = !speaker
             || protagonistSpeakerAliases.includes(speaker)
@@ -774,9 +782,9 @@ const generateChatResponse = async (request: GeminiChatRequest): Promise<GeminiC
             let dialogueText = block.text || '';
 
             if (!speaker) {
-              const nameMatch = dialogueText.match(/^([^「」\s]{1,20})[\s]*「/);
+              const nameMatch = dialogueText.match(/^([^「」]{1,40}?)\s*「/);
               if (nameMatch) {
-                speaker = nameMatch[1];
+                speaker = nameMatch[1].trim();
                 dialogueText = dialogueText.slice(nameMatch[0].length - 1);
               }
             }
