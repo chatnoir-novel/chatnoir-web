@@ -65,6 +65,149 @@
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255,255,255,0.03) inset;
 }
 
+.selectedScenarioSummary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--chat-input-bg);
+}
+
+.selectedScenarioSummary > img,
+.selectedScenarioNoCover {
+  width: 88px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.selectedScenarioNoCover {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: #222;
+  font-size: 0.58rem;
+}
+
+.selectedScenarioSummary > div:nth-child(2) { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0.2rem; }
+.selectedScenarioSummary span { color: var(--text-muted); font-size: 0.7rem; letter-spacing: 0.08em; }
+.selectedScenarioSummary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
+.selectedScenarioActions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+.scenarioChooser { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 1.25rem; }
+.scenarioStartChoiceGrid { display: grid; grid-template-columns: 1fr; gap: 0.9rem; }
+.scenarioEntrySection, .scenarioLibrary, .fileImportPanel { border: 1px solid var(--border-color); border-radius: 10px; background: rgba(0, 0, 0, 0.025); }
+.scenarioEntrySection { padding: 1.25rem; }
+.scenarioEntryHeading { display: flex; align-items: flex-start; margin-bottom: 0.85rem; }
+.scenarioEntryHeading h3 { margin: 0; color: var(--text-main); font-family: var(--font-serif); font-size: 0.95rem; letter-spacing: 0.08em; }
+.scenarioEntryHeading p { margin: 0.12rem 0 0; color: var(--text-muted); font-size: 0.7rem; }
+.emptyScenarioChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.choiceCard {
+  display: flex;
+  min-height: 116px;
+  padding: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.35rem;
+  color: var(--text-main);
+  text-align: left;
+  background: var(--chat-input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.choiceCard:hover { transform: translateY(-3px); border-color: var(--text-main); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1); }
+.choiceCard span, .choiceCard small { color: var(--text-muted); font-size: 0.7rem; letter-spacing: 0.05em; }
+.choiceCard strong { font-family: var(--font-serif); font-size: 1.05rem; letter-spacing: 0.08em; }
+.sampleChoiceCard { position: relative; min-height: 148px; overflow: hidden; padding-right: min(37%, 310px); }
+.sampleChoiceCard img { position: absolute; top: 0; right: 0; bottom: 0; width: min(34%, 280px); height: 100%; object-fit: contain; object-position: center; background: #171717; }
+.libraryChoiceCard { position: relative; min-height: 148px; padding-right: min(47%, 390px); }
+.choiceCardCopy { display: flex; flex-direction: column; gap: 0.35rem; }
+.libraryPreview { position: absolute; top: 0; right: 0; bottom: 0; display: flex; width: min(44%, 360px); padding: 0.7rem; align-items: center; gap: 0.45rem; background: rgba(0, 0, 0, 0.035); border-left: 1px solid var(--border-color); }
+.libraryPreview img, .libraryPreview > span:not(.libraryPreviewEmpty) { width: 31%; min-width: 0; overflow: hidden; border-radius: 4px; background: #222; aspect-ratio: 16 / 10; object-fit: cover; }
+.libraryPreviewEmpty { color: var(--text-muted); font-size: 0.65rem; }
+.libraryPreview b { position: absolute; right: 0.7rem; bottom: 0.6rem; padding: 0.15rem 0.45rem; color: #475569; background: rgba(255, 255, 255, 0.82); border-radius: 999px; font-size: 0.65rem; }
+.libraryChoiceCard .libraryPreview::after { content: ''; }
+.selectedScenarioHero { display: flex; width: 100%; min-height: 220px; max-height: 410px; margin-bottom: 1.25rem; overflow: hidden; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 8px; background: #111; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14); aspect-ratio: 16 / 9; }
+.selectedScenarioHero img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.selectedScenarioHero > div { display: flex; padding: 1.5rem; flex-direction: column; align-items: center; gap: 0.75rem; color: #8a8a8a; text-align: center; }
+.selectedScenarioHero span { font-size: 0.7rem; letter-spacing: 0.16em; }
+.selectedScenarioHero strong { color: #c7c7c7; font-size: 0.9rem; font-weight: 500; }
+.scenarioLibrary { margin: 0; padding: 1.25rem; }
+.scenarioLibrary summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.85rem; padding: 0; color: var(--text-main); cursor: pointer; list-style: none; transition: color 0.2s ease; }
+.scenarioLibrary summary::-webkit-details-marker { display: none; }
+.scenarioLibrary summary:hover { color: #000; }
+.scenarioLibrarySummaryText { display: grid; min-width: 0; gap: 0.14rem; }
+.scenarioLibrarySummaryText strong { font-family: var(--font-serif); font-size: 0.95rem; letter-spacing: 0.08em; }
+.scenarioLibrarySummaryText small { color: var(--text-muted); font-size: 0.7rem; font-weight: 400; }
+.scenarioLibrarySummaryMeta { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.scenarioLibraryCount { padding: 0.16rem 0.45rem; color: #475569; background: rgba(100, 116, 139, 0.1); border-radius: 999px; font-size: 0.65rem; font-weight: 700; }
+.scenarioLibraryToggleLabel { display: inline-flex; min-width: 7rem; padding: 0.4rem 0.65rem; align-items: center; justify-content: center; gap: 0.45rem; color: #334155; background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(100, 116, 139, 0.28); border-radius: 5px; font-size: 0.68rem; font-weight: 700; }
+.scenarioLibraryHideLabel { display: none; }
+.scenarioLibrary[open] .scenarioLibraryShowLabel { display: none; }
+.scenarioLibrary[open] .scenarioLibraryHideLabel { display: inline; }
+.scenarioLibrarySummaryMeta small { color: var(--text-muted); font-size: 0.62rem; white-space: nowrap; }
+.emptyScenarioLibrary { grid-column: 1 / -1; margin: 0; padding: 1rem; color: var(--text-muted); font-size: 0.8rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 6px; }
+.textButton { padding: 0.5rem 0.75rem; color: var(--text-main); background: transparent; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 0.72rem; white-space: nowrap; }
+.textButton:hover { background: rgba(0, 0, 0, 0.05); }
+.fileSetupOptions { display: flex; flex-direction: column; gap: 0.75rem; }
+.fileImportPanel { padding: 1.25rem; scroll-margin-top: 1.5rem; }
+.fileImportHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; text-align: left; cursor: pointer; list-style: none; }
+.fileImportHeading::-webkit-details-marker { display: none; }
+.fileImportHeading::after { content: '⌄'; color: var(--text-muted); font-size: 1rem; transition: transform 0.2s ease; }
+.fileImportPanel[open] .fileImportHeading::after { transform: rotate(180deg); }
+.fileImportHeading p { margin: 0.15rem 0 0; color: #111; font-family: var(--font-serif); font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; }
+.fileImportHeading small { display: block; margin-top: 0.2rem; color: var(--text-muted); font-size: 0.7rem; }
+.scenarioDropZone { display: flex; min-height: 190px; padding: 1.75rem; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; border: 1px dashed rgba(17, 24, 39, 0.28); border-radius: 8px; background: rgba(255, 255, 255, 0.42); color: var(--text-muted); transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease; }
+.scenarioDropZoneActive { border-color: #2563eb; background: rgba(37, 99, 235, 0.08); transform: scale(1.01); }
+.dropZoneIcon { display: grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid var(--border-color); border-radius: 50%; color: var(--text-main); font-size: 1.25rem; line-height: 1; }
+.scenarioDropZone > strong { margin-top: 0.25rem; color: var(--text-main); font-family: var(--font-serif); font-size: 0.95rem; letter-spacing: 0.07em; }
+.scenarioDropZone > span:not(.dropZoneIcon) { font-size: 0.72rem; }
+.scenarioImportStatus { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.scenarioImportStatusHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-main); font-size: 0.82rem; }
+.scenarioImportStatusHeader span { padding: 0.18rem 0.52rem; border-radius: 999px; background: rgba(37, 99, 235, 0.1); color: #1d4ed8; font-size: 0.7rem; font-weight: 700; }
+.scenarioLaunchPanel { display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem; border: 1px solid var(--border-color); border-radius: 10px; background: rgba(0, 0, 0, 0.025); }
+.scenarioLaunchStatus { padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+.scenarioFileList { display: none; }
+.scenarioFileListTitle { grid-column: 1 / -1; margin: 0; padding-bottom: 0.35rem; color: var(--text-muted); font-size: 0.72rem; letter-spacing: 0.05em; }
+.scenarioFileList > div { min-width: 0; }
+.scenarioFileList > div:last-child { grid-column: 1 / -1; }
+.scenarioLibraryGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+.scenarioCard { min-width: 0; padding: 0.45rem; color: var(--text-main); border: 1px solid transparent; border-radius: 7px; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease; }
+.scenarioCard:hover { transform: translateY(-3px); background: rgba(0, 0, 0, 0.035); }
+.scenarioCardSelected { border-color: var(--text-main); background: rgba(0, 0, 0, 0.04); }
+.scenarioCardCover { width: 100%; overflow: hidden; aspect-ratio: 16 / 9; border-radius: 4px; background: #222; }
+.scenarioCardCover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scenarioCardNoCover { display: grid; width: 100%; height: 100%; place-items: center; color: #777; font-size: 0.6rem; }
+.scenarioCardTitle { display: -webkit-box; margin-top: 0.55rem; overflow: hidden; color: var(--text-main); font-size: 0.75rem; line-height: 1.45; letter-spacing: 0.03em; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.advancedScenarioSettings { padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; }
+.advancedScenarioSettings summary { color: var(--text-main); cursor: pointer; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.05em; }
+.advancedScenarioSettings > p { margin: 0.75rem 0 0.25rem; color: var(--text-muted); font-size: 0.72rem; line-height: 1.7; }
+.saveNameField { margin-top: 0.5rem; }
+.saveNameField label { display: block; margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.8rem; letter-spacing: 0.08em; }
+.saveNameField label span { margin-left: 0.35rem; color: var(--text-muted); font-size: 0.68rem; }
+.saveNameField p { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.7rem; }
+.scenarioSetupChecklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem 1rem; margin: 0.9rem 0 0; padding: 0; list-style: none; }
+.scenarioSetupChecklist li { display: grid; min-width: 0; grid-template-columns: 1rem minmax(0, 1fr) auto auto; align-items: center; gap: 0.35rem; padding: 0.38rem 0.45rem; border: 1px solid transparent; border-radius: 4px; color: #64748b; font-size: 0.75rem; }
+.scenarioSetupChecklist li > span:first-child { width: 1rem; color: #94a3b8; font-weight: 700; }
+.scenarioSetupItemLabel { min-width: 0; width: auto !important; }
+.scenarioSetupUploadButton { padding: 0.2rem 0.48rem; color: #334155; background: rgba(255, 255, 255, 0.58); border: 1px solid rgba(100, 116, 139, 0.3); border-radius: 4px; cursor: pointer; font-size: 0.65rem; line-height: 1.2; }
+.scenarioSetupUploadButton:hover { color: #0f172a; background: #fff; border-color: #475569; }
+.scenarioSetupChecklist li small { margin-left: auto; color: #94a3b8; font-size: 0.62rem; white-space: nowrap; }
+.scenarioSetupRequired { border-color: rgba(100, 116, 139, 0.16) !important; background: rgba(100, 116, 139, 0.04); }
+.scenarioSetupOptional { border-color: rgba(100, 116, 139, 0.16) !important; background: rgba(100, 116, 139, 0.04); }
+.scenarioSetupChecklist .requiredBadge, .scenarioSetupChecklist .optionalBadge { padding: 0.1rem 0.34rem; border-radius: 999px; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; }
+.scenarioSetupChecklist .requiredBadge { color: #1d4ed8; background: rgba(37, 99, 235, 0.14); }
+.scenarioSetupChecklist .optionalBadge { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+.scenarioSetupChecklist .scenarioSetupReady { color: #166534; }
+.scenarioSetupChecklist .scenarioSetupReady > span { color: #16a34a; }
+
 .logoImage {
   max-width: 320px;
   height: auto;
@@ -397,6 +540,8 @@
     padding: 1.75rem;
   }
 
+  .scenarioLibraryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
   .subtitle {
     margin-bottom: 2rem;
     letter-spacing: 0.2em;
@@ -486,6 +631,24 @@
   .loginCard {
     padding: 1.25rem;
   }
+
+  .emptyScenarioChoices { grid-template-columns: 1fr; }
+  .sampleChoiceCard { min-height: 120px; }
+  .sampleChoiceCard, .libraryChoiceCard { min-height: 132px; padding-right: 42%; }
+  .sampleChoiceCard img, .libraryPreview { width: 39%; }
+  .scenarioLibraryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scenarioLibrary summary { align-items: flex-start; flex-wrap: wrap; }
+  .scenarioSetupChecklist { grid-template-columns: 1fr; }
+  .scenarioFileList { grid-template-columns: 1fr; }
+  .selectedScenarioSummary {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    align-items: center;
+  }
+  .selectedScenarioSummary > div:nth-child(2) { width: 100%; }
+  .selectedScenarioSummary span { white-space: nowrap; }
+  .selectedScenarioActions { grid-column: 1 / -1; width: 100%; }
+  .selectedScenarioActions button { width: 100%; }
 
   .logoImage {
     max-width: 220px;

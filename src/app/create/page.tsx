@@ -106,6 +106,8 @@ const CREATE_DRAFT_STORAGE_KEY = 'chatnoir_scenarioCreateDraft_v1';
 const PHASE_ORDER: GenerationPhaseId[] = ['phase1', 'phase2', 'phase3a', 'phase3b', 'phase4'];
 const MODEL_OPTIONS = [
   { value: 'gemma-4-31b-it', label: 'Gemma 4 31B' },
+  { value: 'gemini-3.7-flash', label: 'Gemini 3.7 Flash' },
+  { value: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash' },
   { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
   { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite' },
   { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite' },
