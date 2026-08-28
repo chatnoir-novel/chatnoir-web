@@ -4575,7 +4575,7 @@ ${currentMapJson}
             <ul className={styles.scenarioSetupChecklist}>
               {scenarioSetupItems.map((item) => (
                 <li key={item.label} className={`${item.ready ? styles.scenarioSetupReady : ''} ${item.optional ? styles.scenarioSetupOptional : styles.scenarioSetupRequired}`}>
-                  <span aria-hidden="true">{item.ready ? '✓' : '○'}</span>
+                  <span aria-hidden="true">{item.ready ? '✓' : '−'}</span>
                   <span className={styles.scenarioSetupItemLabel}>{item.label}</span>
                   <small className={item.optional ? styles.optionalBadge : styles.requiredBadge}>{item.optional ? '任意' : '必須'}</small>
                 </li>
@@ -4836,7 +4836,7 @@ ${currentMapJson}
                   <ul className={styles.scenarioSetupChecklist}>
                     {scenarioSetupItems.map((item) => (
                       <li key={item.label} className={`${item.ready ? styles.scenarioSetupReady : ''} ${item.optional ? styles.scenarioSetupOptional : styles.scenarioSetupRequired}`}>
-                        <span aria-hidden="true">{item.ready ? '✓' : '○'}</span>
+                        <span aria-hidden="true">{item.ready ? '✓' : '−'}</span>
                         <span className={styles.scenarioSetupItemLabel}>{item.label}</span>
                         <button
                           type="button"
